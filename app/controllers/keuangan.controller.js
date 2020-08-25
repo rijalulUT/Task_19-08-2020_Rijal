@@ -8,12 +8,13 @@ const Op = db.Sequelize.Op
 const kue  = require("../queue/kue")
 require ('../queue/worker')
 
-exports.create = (req, res) =>{
+exports.create = async(req, res) =>{
     const token = req.headers.token
     User.findOne({ where: { token: token  },raw : true })
         .then(function (users){
         const id_user = users.id
         const email = users.email
+        
         // Create Post
         const keuangan = {
             kegiatan: req.body.kegiatan,
@@ -26,6 +27,7 @@ exports.create = (req, res) =>{
             .then((data)=>{
                 res.send(data)
                 data = JSON.parse(JSON.stringify(data, null, 4))
+             
                 dataReq.forEach(
                     dataReq.keysIn(req.files.photos),
                     (key) => {
@@ -40,10 +42,10 @@ exports.create = (req, res) =>{
                         Bukti.create(struk)
                     }
                 )
-                async(req,res) =>{
+                    
                     let args = {
                         jobName: "sendEmail",
-                        time:15000,
+                        time:10000,
                         params: {
                             email:email,
                             subject:"Pesan Simpan",
@@ -51,7 +53,7 @@ exports.create = (req, res) =>{
                         }
                     };
                     kue.scheduleJob(args)
-                }
+                    //console.log(email)
                 
             }).catch((err)=>{
                 res.status(500).send({
@@ -104,12 +106,13 @@ exports.findAll = (req,res) =>{
             })
         })
 }
-exports.editKegiatan = (req, res) =>{
+exports.editKegiatan = async(req, res) =>{
     const token = req.headers.token
     const id_kegiatan = req.params.id
     User.findOne({ where: { token: token  },raw : true })
         .then((users)=>{
             const id_user = users.id
+            const email = users.email
             Keuangan.update({
                 kegiatan: req.body.kegiatan,
                 tanggal:req.body.tanggal,
@@ -129,13 +132,23 @@ exports.editKegiatan = (req, res) =>{
                     )
                     res.send({
                         status: true,
-                        message: 'Data Has benn updated',
+                        message: 'Data Has been updated',
                         data: {
                             kegiatan: req.body.kegiatan,
                             tanggal:req.body.tanggal,
                             harga: req.body.harga
                         }                                                    
                      })
+                     let args = {
+                        jobName: "sendEmail",
+                        time:10000,
+                        params: {
+                            email:email,
+                            subject:"Pesan Simpan",
+                            body:"Data Anda Telah Diubah"
+                        }
+                    };
+                    kue.scheduleJob(args)
                 }else {
                     res.send({
                              message: `Cannot Update post id = ${id_kegiatan}`

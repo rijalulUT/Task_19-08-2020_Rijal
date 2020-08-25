@@ -5,6 +5,7 @@ const morgan = require("morgan")
 const fileUpload = require("express-fileupload")
 const cron = require("node-cron")
 const nodemailer = require("nodemailer")
+const Slack = require('node-slack')
 var kue = require('kue')
 var Queue = kue.createQueue()
 //Models 
@@ -53,6 +54,16 @@ var task = cron.schedule("0 9 * * *", function() {
 )
 task.start
 
+var task_slack = cron.schedule("0 10 * * *", function() {
+    //untuk memanggil cron email tiap jam 09:00 WIB
+    require("./app/cron/slack")
+    (Slack).then(console.log('success send to slack'))
+    },{
+        scheduled:true,
+        timezone:"Asia/Jakarta"
+    }
+)
+task_slack.start
 //set port, listen for request
 const PORT = process.env.PORT || 8080
 
